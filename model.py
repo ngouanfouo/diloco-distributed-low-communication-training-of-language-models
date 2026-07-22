@@ -253,8 +253,18 @@ def decoupled_weight_decay(params, lr, weight_decay):
     
     return new_params
 
-# Step 12 - clone_params (not yet solved)
-# TODO: implement
+# Step 12 - clone_params
+import numpy as np
+
+def clone_params(params):
+    # TODO: return a new dict whose values are independent copies of the input arrays.
+    cloned = {}
+    
+    for key, value in params.items():
+        # Create a deep copy of each array using np.copy()
+        cloned[key] = np.copy(value)
+    
+    return cloned
 
 # Step 13 - scale_params (not yet solved)
 # TODO: implement

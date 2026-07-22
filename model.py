@@ -26,8 +26,12 @@ def init_model_params(input_dim, hidden_dim, output_dim, seed=0):
         'b2': b2
     }
 
-# Step 2 - relu (not yet solved)
-# TODO: implement
+# Step 2 - relu
+import numpy as np
+
+def relu(x):
+    # TODO: return an array of the same shape as x with negatives clipped to 0.
+    return np.maximum(0, x)
 
 # Step 3 - model_forward (not yet solved)
 # TODO: implement

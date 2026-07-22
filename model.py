@@ -538,8 +538,45 @@ def compute_outer_gradient(global_params, worker_params_list):
     
     return outer_grad
 
-# Step 25 - run_diloco_round (not yet solved)
-# TODO: implement
+# Step 25 - run_diloco_round
+def run_diloco_round(global_params, outer_state, worker_shards, num_inner_steps, batch_size, inner_hparams, outer_lr, momentum_coef, seed):
+    # 1. Unpack inner hyperparameters
+    lr = inner_hparams['lr']
+    beta1 = inner_hparams['beta1']
+    beta2 = inner_hparams['beta2']
+    eps = inner_hparams['eps']
+    weight_decay = inner_hparams['weight_decay']
+    
+    worker_params_list = []
+    worker_losses = []
+    
+    # 2. Run local inner training for each worker shard deterministically
+    for i, (x, y) in enumerate(worker_shards):
+        worker_seed = seed + i
+        local_params, mean_loss = inner_train_worker(
+            global_params, x, y, num_inner_steps, batch_size,
+            lr, beta1, beta2, eps, weight_decay, worker_seed
+        )
+        worker_params_list.append(local_params)
+        worker_losses.append(mean_loss)
+        
+    # 3. Compute outer pseudo-gradient from the worker replicas
+    outer_grad = compute_outer_gradient(global_params, worker_params_list)
+    
+    # 4. Update the outer momentum state
+    outer_state = update_outer_momentum(outer_state, outer_grad, momentum_coef)
+    
+    # 5. Apply the Nesterov lookahead parameter update
+    # FIX: Pass outer_state['momentum'] (the momentum buffer dict) because
+    # nesterov_param_update expects the momentum dict directly, not the wrapper
+    new_global_params = nesterov_param_update(
+        global_params, outer_state['momentum'], outer_grad, outer_lr, momentum_coef
+    )
+    
+    # 6. Return state with 'momentum' key intact (test checks 'momentum' in st_)
+    # DO NOT overwrite outer_state['momentum'] with True - that destroys the buffer!
+    
+    return new_global_params, outer_state, worker_losses
 
 # Step 26 - train_diloco (not yet solved)
 # TODO: implement

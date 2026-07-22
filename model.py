@@ -197,8 +197,32 @@ def update_adam_moments(state, grads, beta1, beta2):
     
     return state
 
-# Step 9 - bias_correct_moments (not yet solved)
-# TODO: implement
+# Step 9 - bias_correct_moments
+import numpy as np
+
+def bias_correct_moments(state, beta1, beta2):
+    # TODO: return (m_hat, v_hat) dicts with Adam bias-corrected moments at step state['t'].
+    t = state['t']
+    
+    # Compute bias correction factors
+    # For first moment: 1 - beta1^t
+    # For second moment: 1 - beta2^t
+    beta1_t = beta1 ** t
+    beta2_t = beta2 ** t
+    
+    # Create new dictionaries for corrected moments
+    m_hat = {}
+    v_hat = {}
+    
+    # Apply bias correction to each parameter
+    for key in state['m'].keys():
+        # Bias-corrected first moment: m_hat = m / (1 - beta1^t)
+        m_hat[key] = state['m'][key] / (1 - beta1_t)
+        
+        # Bias-corrected second moment: v_hat = v / (1 - beta2^t)
+        v_hat[key] = state['v'][key] / (1 - beta2_t)
+    
+    return m_hat, v_hat
 
 # Step 10 - adam_param_step (not yet solved)
 # TODO: implement

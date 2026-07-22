@@ -266,8 +266,18 @@ def clone_params(params):
     
     return cloned
 
-# Step 13 - scale_params (not yet solved)
-# TODO: implement
+# Step 13 - scale_params
+import numpy as np
+
+def scale_params(params, scalar):
+    # TODO: return a new dict where every array in params is multiplied by scalar.
+    scaled = {}
+    
+    for key, value in params.items():
+        # Multiply each array by the scalar and create an independent copy
+        scaled[key] = value * scalar
+    
+    return scaled
 
 # Step 14 - subtract_params (not yet solved)
 # TODO: implement

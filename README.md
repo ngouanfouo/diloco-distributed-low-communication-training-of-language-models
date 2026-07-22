@@ -35,8 +35,8 @@ python scaffold.py
 - [x] **23.** nesterov_param_update
 - [x] **24.** compute_outer_gradient
 - [x] **25.** run_diloco_round
-- [ ] **26.** train_diloco
-- [ ] **27.** train_synchronous_baseline
+- [x] **26.** train_diloco
+- [x] **27.** train_synchronous_baseline
 - [ ] **28.** evaluate_loss
 - [ ] **29.** classification_accuracy
 - [ ] **30.** communication_savings

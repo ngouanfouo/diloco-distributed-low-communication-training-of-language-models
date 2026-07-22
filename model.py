@@ -578,11 +578,120 @@ def run_diloco_round(global_params, outer_state, worker_shards, num_inner_steps,
     
     return new_global_params, outer_state, worker_losses
 
-# Step 26 - train_diloco (not yet solved)
-# TODO: implement
+# Step 26 - train_diloco
+def train_diloco(init_params, worker_shards, num_rounds, num_inner_steps, batch_size, inner_hparams, outer_lr, momentum_coef, seed=0):
+    # Deep-copy initial parameters so we don't mutate the caller's dict
+    params = clone_params(init_params)
+    
+    # Initialize outer optimizer state once; momentum persists across rounds
+    outer_state = init_outer_optimizer(params)
+    
+    round_losses = []
+    
+    # Loop through each communication round
+    for r in range(num_rounds):
+        # Vary seed per round so workers don't resample identical batches every round
+        round_seed = seed + r
+        
+        # Execute one full DiLoCo round
+        params, outer_state, worker_losses = run_diloco_round(
+            params,
+            outer_state,
+            worker_shards,
+            num_inner_steps,
+            batch_size,
+            inner_hparams,
+            outer_lr,
+            momentum_coef,
+            round_seed
+        )
+        
+        # Log the mean worker loss for this round
+        round_losses.append(float(np.mean(worker_losses)))
+    
+    return params, {'round_losses': round_losses}
 
-# Step 27 - train_synchronous_baseline (not yet solved)
-# TODO: implement
+# Step 27 - train_synchronous_baseline
+import numpy as np
+
+def train_synchronous_baseline(init_params, worker_shards, num_steps, batch_size, inner_hparams, seed=0):
+    # TODO: train synchronously by averaging per-worker gradients into one AdamW step per iteration.
+    # 1. Clone initial parameters to avoid aliasing
+    params = clone_params(init_params)
+    
+    # 2. Initialize AdamW state for the shared model
+    adam_state = init_adamw_state(params)
+    
+    # 3. Extract hyperparameters
+    lr = inner_hparams['lr']
+    beta1 = inner_hparams['beta1']
+    beta2 = inner_hparams['beta2']
+    eps = inner_hparams['eps']
+    weight_decay = inner_hparams['weight_decay']
+    
+    # 4. Create a single RNG for reproducibility across steps
+    rng = np.random.default_rng(seed)
+    
+    # 5. Pre-compute per-worker RNGs by stepping the main RNG
+    # Each worker gets its own RNG seeded deterministically
+    worker_rngs = []
+    for worker_id in range(len(worker_shards)):
+        # Create a new RNG for each worker by splitting from the main RNG
+        worker_rngs.append(np.random.default_rng(seed + worker_id * 1000))
+    
+    # 6. Track losses
+    step_losses = []
+    
+    # 7. Run training for num_steps
+    for step in range(num_steps):
+        # Accumulate gradients across workers
+        total_grads = None
+        total_loss = 0.0
+        num_workers = len(worker_shards)
+        
+        for worker_id, (x_shard, y_shard) in enumerate(worker_shards):
+            # Sample a mini-batch from this worker's shard
+            x_batch, y_batch = sample_worker_batch(x_shard, y_shard, batch_size, worker_rngs[worker_id])
+            
+            # Forward pass
+            logits, cache = model_forward(params, x_batch)
+            
+            # Compute loss
+            loss = cross_entropy_loss(logits, y_batch)
+            total_loss += loss
+            
+            # Backward pass to get gradients for this worker
+            grads = model_backward(params, cache, y_batch)
+            
+            # Accumulate gradients (sum, we'll average later)
+            if total_grads is None:
+                total_grads = grads
+            else:
+                for key in grads.keys():
+                    total_grads[key] += grads[key]
+        
+        # Average gradients across workers
+        avg_grads = {}
+        for key in total_grads.keys():
+            avg_grads[key] = total_grads[key] / num_workers
+        
+        # Update AdamW moments using averaged gradients
+        adam_state = update_adam_moments(adam_state, avg_grads, beta1, beta2)
+        
+        # Bias-correct moments
+        m_hat, v_hat = bias_correct_moments(adam_state, beta1, beta2)
+        
+        # Apply Adam parameter update
+        params = adam_param_step(params, m_hat, v_hat, lr, eps)
+        
+        # Apply decoupled weight decay
+        params = decoupled_weight_decay(params, lr, weight_decay)
+        
+        # Record mean loss across workers for this step
+        mean_loss = total_loss / num_workers
+        step_losses.append(float(mean_loss))
+    
+    return params, {'step_losses': step_losses}
 
 # Step 28 - evaluate_loss (not yet solved)
 # TODO: implement

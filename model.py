@@ -179,8 +179,23 @@ def init_adamw_state(params):
         't': 0  # Step counter starting at 0
     }
 
-# Step 8 - update_adam_moments (not yet solved)
-# TODO: implement
+# Step 8 - update_adam_moments
+import numpy as np
+
+def update_adam_moments(state, grads, beta1, beta2):
+    # TODO: increment state['t'] and update first/second moment EMAs for each param key.
+    # Increment timestep
+    state['t'] += 1
+    
+    # Update moments for each parameter
+    for key in grads.keys():
+        # First moment (mean): m_t = beta1 * m_{t-1} + (1 - beta1) * g_t
+        state['m'][key] = beta1 * state['m'][key] + (1 - beta1) * grads[key]
+        
+        # Second moment (uncentered variance): v_t = beta2 * v_{t-1} + (1 - beta2) * g_t^2
+        state['v'][key] = beta2 * state['v'][key] + (1 - beta2) * (grads[key] ** 2)
+    
+    return state
 
 # Step 9 - bias_correct_moments (not yet solved)
 # TODO: implement

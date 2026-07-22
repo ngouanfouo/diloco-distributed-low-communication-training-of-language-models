@@ -110,8 +110,55 @@ def cross_entropy_loss(logits, labels):
     # Note: Don't add epsilon here since we're working in log space
     return -np.mean(true_log_probs)
 
-# Step 6 - model_backward (not yet solved)
-# TODO: implement
+# Step 6 - model_backward
+import numpy as np
+
+def model_backward(params, cache, labels):
+    # TODO: return a dict of gradients {'W1','b1','W2','b2'} from cache and labels.
+    # Extract from cache
+    x = cache['x']
+    z1 = cache['z1']
+    h1 = cache['h1']
+    logits = cache['logits']
+    
+    N = x.shape[0]
+    
+    # Extract parameters for shapes
+    W2 = params['W2']
+    
+    # === Gradient of loss w.r.t. logits ===
+    # For softmax + cross-entropy, dL/dlogits = softmax(logits) - one_hot(labels)
+    probs = softmax(logits)
+    # Create one-hot encoding of labels
+    one_hot = np.zeros_like(probs)
+    one_hot[np.arange(N), labels] = 1.0
+    dlogits = (probs - one_hot) / N  # Average over batch
+    
+    # === Backprop through output linear layer: logits = h1 @ W2 + b2 ===
+    # dL/dW2 = h1.T @ dlogits
+    # dL/db2 = sum(dlogits, axis=0)
+    # dL/dh1 = dlogits @ W2.T
+    dW2 = h1.T @ dlogits
+    db2 = np.sum(dlogits, axis=0)
+    dh1 = dlogits @ W2.T
+    
+    # === Backprop through ReLU: h1 = relu(z1) ===
+    # dL/dz1 = dh1 * (z1 > 0)
+    dz1 = dh1 * (z1 > 0)
+    
+    # === Backprop through input linear layer: z1 = x @ W1 + b1 ===
+    # dL/dW1 = x.T @ dz1
+    # dL/db1 = sum(dz1, axis=0)
+    # (No need for dx as we don't propagate to input)
+    dW1 = x.T @ dz1
+    db1 = np.sum(dz1, axis=0)
+    
+    return {
+        'W1': dW1,
+        'b1': db1,
+        'W2': dW2,
+        'b2': db2
+    }
 
 # Step 7 - init_adamw_state (not yet solved)
 # TODO: implement

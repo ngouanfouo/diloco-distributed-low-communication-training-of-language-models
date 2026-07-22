@@ -61,8 +61,25 @@ def model_forward(params, x):
     
     return logits, cache
 
-# Step 4 - softmax (not yet solved)
-# TODO: implement
+# Step 4 - softmax
+import numpy as np
+
+def softmax(logits):
+    # TODO: return a row-wise, numerically-stable softmax of logits with shape (N, C).
+    # Subtract the maximum value from each row for numerical stability
+    # This prevents overflow when exponentiating large values
+    logits_shifted = logits - np.max(logits, axis=1, keepdims=True)
+    
+    # Compute exponentials of shifted logits
+    exp_logits = np.exp(logits_shifted)
+    
+    # Compute sum of exponentials for each row (keepdims=True for broadcasting)
+    sum_exp = np.sum(exp_logits, axis=1, keepdims=True)
+    
+    # Compute probabilities by dividing each row by its sum
+    probs = exp_logits / sum_exp
+    
+    return probs
 
 # Step 5 - cross_entropy_loss (not yet solved)
 # TODO: implement

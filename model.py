@@ -81,8 +81,34 @@ def softmax(logits):
     
     return probs
 
-# Step 5 - cross_entropy_loss (not yet solved)
-# TODO: implement
+# Step 5 - cross_entropy_loss
+import numpy as np
+
+def cross_entropy_loss(logits, labels):
+    # TODO: Compute the mean cross-entropy loss between logits (N,C) and integer labels (N,).
+    # Numerically stable implementation that works with large logits
+    # Subtract max for stability, but preserve the loss magnitude
+    
+    # Shift logits for numerical stability
+    max_logits = np.max(logits, axis=1, keepdims=True)
+    logits_shifted = logits - max_logits
+    
+    # Compute softmax numerator and denominator in log space
+    exp_logits = np.exp(logits_shifted)
+    sum_exp = np.sum(exp_logits, axis=1, keepdims=True)
+    
+    # Compute log probabilities directly (more stable)
+    # log(p_i) = log(exp(logits_i - max)) - log(sum(exp(logits - max)))
+    # = (logits_i - max) - log(sum_exp)
+    N = logits.shape[0]
+    log_probs = logits_shifted - np.log(sum_exp)
+    
+    # Get log probability of true class for each sample
+    true_log_probs = log_probs[np.arange(N), labels]
+    
+    # Cross-entropy loss = -mean(log probability of true class)
+    # Note: Don't add epsilon here since we're working in log space
+    return -np.mean(true_log_probs)
 
 # Step 6 - model_backward (not yet solved)
 # TODO: implement

@@ -160,8 +160,24 @@ def model_backward(params, cache, labels):
         'b2': db2
     }
 
-# Step 7 - init_adamw_state (not yet solved)
-# TODO: implement
+# Step 7 - init_adamw_state
+import numpy as np
+
+def init_adamw_state(params):
+    # TODO: Build the AdamW state dict with zeroed first/second moments and t=0.
+    m = {}
+    v = {}
+    
+    # For each parameter, create zero-filled arrays with the same shape and dtype
+    for key, param in params.items():
+        m[key] = np.zeros_like(param)  # First moment (mean)
+        v[key] = np.zeros_like(param)  # Second moment (uncentered variance)
+    
+    return {
+        'm': m,
+        'v': v,
+        't': 0  # Step counter starting at 0
+    }
 
 # Step 8 - update_adam_moments (not yet solved)
 # TODO: implement

@@ -354,8 +354,48 @@ def iid_shard_dataset(x, y, num_workers, seed=0):
     
     return shards
 
-# Step 17 - noniid_shard_dataset (not yet solved)
-# TODO: implement
+# Step 17 - noniid_shard_dataset
+import numpy as np
+
+def noniid_shard_dataset(x, y, num_workers, num_classes, seed=0):
+    # TODO: partition (x, y) across workers so each worker owns a distinct subset of classes.
+    # Initialize empty lists for each worker's data
+    worker_x = [[] for _ in range(num_workers)]
+    worker_y = [[] for _ in range(num_workers)]
+    
+    # Assign classes to workers by round-robin: class c goes to worker c % num_workers
+    # Create a mapping from class to worker
+    class_to_worker = {}
+    for c in range(num_classes):
+        worker_id = c % num_workers
+        class_to_worker[c] = worker_id
+    
+    # Group each example by its assigned worker based on its label
+    for i in range(len(y)):
+        label = y[i]
+        worker_id = class_to_worker[label]
+        worker_x[worker_id].append(x[i])
+        worker_y[worker_id].append(label)
+    
+    # Convert lists to numpy arrays and shuffle within each worker using seeded RNG
+    shards = []
+    rng = np.random.RandomState(seed)
+    
+    for worker_id in range(num_workers):
+        # Convert to numpy arrays
+        x_arr = np.array(worker_x[worker_id])
+        y_arr = np.array(worker_y[worker_id])
+        
+        # Shuffle within the worker to randomize order (preserving row correspondence)
+        if len(x_arr) > 0:
+            indices = np.arange(len(x_arr))
+            rng.shuffle(indices)
+            x_arr = x_arr[indices]
+            y_arr = y_arr[indices]
+        
+        shards.append((x_arr, y_arr))
+    
+    return shards
 
 # Step 18 - sample_worker_batch (not yet solved)
 # TODO: implement

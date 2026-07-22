@@ -478,8 +478,18 @@ def inner_train_worker(params, x_shard, y_shard, num_inner_steps, batch_size, lr
     
     return local_params, mean_loss
 
-# Step 21 - init_outer_optimizer (not yet solved)
-# TODO: implement
+# Step 21 - init_outer_optimizer
+import numpy as np
+
+def init_outer_optimizer(params):
+    # TODO: Build outer optimizer state with a zero momentum buffer matching params shapes.
+    momentum = {}
+    
+    # Create zero-filled momentum buffers matching each parameter's shape and dtype
+    for key, value in params.items():
+        momentum[key] = np.zeros_like(value)
+    
+    return {'momentum': momentum}
 
 # Step 22 - update_outer_momentum (not yet solved)
 # TODO: implement

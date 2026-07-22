@@ -315,8 +315,44 @@ def average_params(params_list):
     
     return avg
 
-# Step 16 - iid_shard_dataset (not yet solved)
-# TODO: implement
+# Step 16 - iid_shard_dataset
+import numpy as np
+
+def iid_shard_dataset(x, y, num_workers, seed=0):
+    # TODO: partition (x, y) uniformly at random into num_workers disjoint IID shards.
+    N = x.shape[0]
+    
+    # Set seed for reproducibility
+    rng = np.random.RandomState(seed)
+    
+    # Create shuffled indices
+    indices = np.arange(N)
+    rng.shuffle(indices)
+    
+    # Shuffle the data using the shuffled indices
+    x_shuffled = x[indices]
+    y_shuffled = y[indices]
+    
+    # Determine shard sizes
+    base_size = N // num_workers
+    remainder = N % num_workers
+    
+    # Create shards
+    shards = []
+    start_idx = 0
+    
+    for worker_id in range(num_workers):
+        # Current shard gets base_size + 1 if it's among the first 'remainder' shards
+        shard_size = base_size + (1 if worker_id < remainder else 0)
+        
+        # Extract shard
+        x_shard = x_shuffled[start_idx:start_idx + shard_size]
+        y_shard = y_shuffled[start_idx:start_idx + shard_size]
+        
+        shards.append((x_shard, y_shard))
+        start_idx += shard_size
+    
+    return shards
 
 # Step 17 - noniid_shard_dataset (not yet solved)
 # TODO: implement

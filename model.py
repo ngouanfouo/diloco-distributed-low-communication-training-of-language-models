@@ -279,11 +279,41 @@ def scale_params(params, scalar):
     
     return scaled
 
-# Step 14 - subtract_params (not yet solved)
-# TODO: implement
+# Step 14 - subtract_params
+import numpy as np
 
-# Step 15 - average_params (not yet solved)
-# TODO: implement
+def subtract_params(params_a, params_b):
+    # TODO: return a new dict with params_a[k] - params_b[k] for each key.
+    diff = {}
+    
+    for key in params_a.keys():
+        # Element-wise subtraction: a[k] - b[k]
+        # Creates a new independent array
+        diff[key] = params_a[key] - params_b[key]
+    
+    return diff
+
+# Step 15 - average_params
+import numpy as np
+
+def average_params(params_list):
+    # TODO: return a new dict whose value at each key is the element-wise mean across the input dicts.
+    # Get the keys from the first dict (assuming all dicts have the same keys)
+    keys = params_list[0].keys()
+    
+    # Initialize the result dictionary
+    avg = {}
+    
+    # For each key, compute the element-wise mean across all dicts
+    for key in keys:
+        # Stack all arrays for this key along a new axis (axis=0)
+        # This creates a 3D array: (num_dicts, *array_shape)
+        stacked = np.stack([params[key] for params in params_list], axis=0)
+        
+        # Compute the mean along the first axis (across dicts)
+        avg[key] = np.mean(stacked, axis=0)
+    
+    return avg
 
 # Step 16 - iid_shard_dataset (not yet solved)
 # TODO: implement

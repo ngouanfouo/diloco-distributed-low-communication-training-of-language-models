@@ -697,18 +697,48 @@ def train_synchronous_baseline(init_params, worker_shards, num_steps, batch_size
     return params, {'step_losses': step_losses}
 
 # Step 28 - evaluate_loss
-def cross_entropy_loss(logits, labels):
-    max_logits = np.max(logits, axis=1, keepdims=True)
-    logits_shifted = logits - max_logits
-    exp_logits = np.exp(logits_shifted)
-    sum_exp = np.sum(exp_logits, axis=1, keepdims=True)
-    N = logits.shape[0]
-    log_probs = logits_shifted - np.log(sum_exp)
-    true_log_probs = log_probs[np.arange(N), labels]
-    return -np.mean(true_log_probs)
+def evaluate_loss(params, x, y):
+    # 1. Run the forward pass to get the raw logits (we don't need the cache for evaluation)
+    logits, _ = model_forward(params, x)
+    
+    # 2. Compute the mean cross-entropy loss using your stable loss helper
+    loss = cross_entropy_loss(logits, y)
+    
+    # 3. Ensure it is returned as a standard Python float
+    return float(loss)
 
-# Step 29 - classification_accuracy (not yet solved)
-# TODO: implement
+# Step 29 - classification_accuracy
+import numpy as np
+
+def classification_accuracy(params, x, y):
+    """
+    Compute top-1 classification accuracy of the 2-layer MLP on a dataset.
+    
+    Args:
+        params: dict with keys 'W1', 'b1', 'W2', 'b2'
+        x: feature matrix of shape (N, D)
+        y: integer labels of shape (N,)
+    
+    Returns:
+        float: fraction of correct predictions in [0, 1]
+    """
+    # Forward pass through the 2-layer MLP
+    z1 = x @ params['W1'] + params['b1']
+    a1 = np.maximum(0, z1)  # ReLU activation
+    logits = a1 @ params['W2'] + params['b2']
+    
+    # Get predicted class (argmax over logits)
+    preds = np.argmax(logits, axis=1)
+    
+    # Ensure labels are flattened
+    y_flat = np.asarray(y).ravel()
+    
+    # Compute accuracy
+    correct = np.sum(preds == y_flat)
+    total = len(y_flat)
+    accuracy = correct / total
+    
+    return float(accuracy)
 
 # Step 30 - communication_savings (not yet solved)
 # TODO: implement

@@ -38,7 +38,7 @@ python scaffold.py
 - [x] **26.** train_diloco
 - [x] **27.** train_synchronous_baseline
 - [x] **28.** evaluate_loss
-- [ ] **29.** classification_accuracy
+- [x] **29.** classification_accuracy
 - [ ] **30.** communication_savings
 
 ---

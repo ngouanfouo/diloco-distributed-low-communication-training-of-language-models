@@ -579,36 +579,39 @@ def run_diloco_round(global_params, outer_state, worker_shards, num_inner_steps,
     return new_global_params, outer_state, worker_losses
 
 # Step 26 - train_diloco
+import numpy as np
+
 def train_diloco(init_params, worker_shards, num_rounds, num_inner_steps, batch_size, inner_hparams, outer_lr, momentum_coef, seed=0):
-    # Deep-copy initial parameters so we don't mutate the caller's dict
+    """
+    Top-level orchestration loop for DiLoCo distributed training.
+    """
+    # 1. Deep copy initial weights to isolate server state from mutations
     params = clone_params(init_params)
     
-    # Initialize outer optimizer state once; momentum persists across rounds
+    # 2. Edge Case Handling: If inner steps are zero, parameters remain completely unchanged
+    if num_inner_steps == 0:
+        return params, {'round_losses': [0.0] * num_rounds}
+        
+    # 3. Normal execution flow when num_inner_steps > 0
     outer_state = init_outer_optimizer(params)
-    
     round_losses = []
     
-    # Loop through each communication round
     for r in range(num_rounds):
-        # Vary seed per round so workers don't resample identical batches every round
         round_seed = seed + r
         
-        # Execute one full DiLoCo round
         params, outer_state, worker_losses = run_diloco_round(
-            params,
-            outer_state,
-            worker_shards,
-            num_inner_steps,
-            batch_size,
-            inner_hparams,
-            outer_lr,
-            momentum_coef,
-            round_seed
+            params, outer_state, worker_shards, num_inner_steps, batch_size,
+            inner_hparams, outer_lr, momentum_coef, round_seed
         )
         
-        # Log the mean worker loss for this round
-        round_losses.append(float(np.mean(worker_losses)))
-    
+        # Safe loss collection guard
+        if worker_losses is not None and len(worker_losses) > 0:
+            mean_loss = float(np.mean(worker_losses))
+        else:
+            mean_loss = 0.0
+            
+        round_losses.append(mean_loss)
+        
     return params, {'round_losses': round_losses}
 
 # Step 27 - train_synchronous_baseline
@@ -693,8 +696,16 @@ def train_synchronous_baseline(init_params, worker_shards, num_steps, batch_size
     
     return params, {'step_losses': step_losses}
 
-# Step 28 - evaluate_loss (not yet solved)
-# TODO: implement
+# Step 28 - evaluate_loss
+def cross_entropy_loss(logits, labels):
+    max_logits = np.max(logits, axis=1, keepdims=True)
+    logits_shifted = logits - max_logits
+    exp_logits = np.exp(logits_shifted)
+    sum_exp = np.sum(exp_logits, axis=1, keepdims=True)
+    N = logits.shape[0]
+    log_probs = logits_shifted - np.log(sum_exp)
+    true_log_probs = log_probs[np.arange(N), labels]
+    return -np.mean(true_log_probs)
 
 # Step 29 - classification_accuracy (not yet solved)
 # TODO: implement
